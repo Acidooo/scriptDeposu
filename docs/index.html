@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIFI Excel Reader - Online Version 0.0.4</title>
+    <title>Scripts - Online</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Updated SheetJS library to the latest version for better performance -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -15,7 +15,8 @@
 <body>
     <header>
         <div class="container">
-            <h1>BIFI Excel Reader</h1>
+            <!-- Do not forget to increment version number for every save -->
+            <h1>BIFI Excel Reader V0.0.5</h1>
             <p>Online Excel Dosya İşleme Aracı</p>
         </div>
     </header>
@@ -111,6 +112,10 @@
             <div id="memoryInfo" style="margin-top: 15px; font-size: 0.9em; color: #666;">
                 JSON optimizasyonu aktif. Veri yüklendikten sonra filtreleme işlemleri hızlı çalışacaktır.
             </div>
+            <div style="margin-top: 15px;">
+                <button id="showDebugInfo" class="button" style="font-size: 0.8em; padding: 5px 10px;">Hata Ayıklama Bilgisini Göster</button>
+                <div id="debugInfo" style="display: none; margin-top: 10px; font-size: 0.8em; background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
         </div>
     </main>
 
@@ -121,5 +126,43 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
+    <script>
+        // Add debug button functionality
+        document.getElementById('showDebugInfo').addEventListener('click', function() {
+            const debugDiv = document.getElementById('debugInfo');
+            if (debugDiv.style.display === 'none') {
+                // Show debug info
+                debugDiv.style.display = 'block';
+                this.textContent = 'Hata Ayıklama Bilgisini Gizle';
+                
+                // Collect available dates from the data
+                if (window.optimizedDataCache) {
+                    const dateHistogram = {};
+                    window.optimizedDataCache.forEach(row => {
+                        if (!dateHistogram[row.formattedDate]) dateHistogram[row.formattedDate] = 0;
+                        dateHistogram[row.formattedDate]++;
+                    });
+                    
+                    const sortedDates = Object.keys(dateHistogram).sort();
+                    
+                    debugDiv.innerHTML = `
+                        <p><b>Excel dosyalarında bulunan tarihler:</b></p>
+                        <p>${sortedDates.join(', ')}</p>
+                        <p><b>Detaylı sayım:</b></p>
+                        <ul>
+                            ${sortedDates.map(date => `<li>${date}: ${dateHistogram[date]} kayıt</li>`).join('')}
+                        </ul>
+                        <p><small>Tarayıcı konsolunda daha fazla teknik detay bulabilirsiniz (F12 tuşuna basın).</small></p>
+                    `;
+                } else {
+                    debugDiv.innerHTML = '<p>Henüz veri işlenmedi. Önce "Dosyaları İşle" butonuna tıklayın.</p>';
+                }
+            } else {
+                // Hide debug info
+                debugDiv.style.display = 'none';
+                this.textContent = 'Hata Ayıklama Bilgisini Göster';
+            }
+        });
+    </script>
 </body>
 </html>

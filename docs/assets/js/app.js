@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const CHUNK_SIZE = 5; // Process files in chunks of 5
     const BATCH_TIMEOUT = 50; // ms between batches to allow UI to refresh
     const ENABLE_JSON_OPTIMIZATION = true; // Enable the JSON optimization for large datasets
+    const DEBUG_MODE = true; // Enable more detailed debug info
     
     // State variables
     let uploadedFiles = [];
@@ -176,8 +177,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // Quick lookup table for dates to improve performance
             const dateSet = new Set(dates);
             
+            if (DEBUG_MODE) {
+                console.log("Looking for these dates:", [...dateSet]);
+                console.log("Total records in all data:", allData.length);
+                
+                // Log some formatted dates from the data to help debug
+                console.log("Sample of formatted dates in data:");
+                const sampleDates = new Set();
+                allData.slice(0, 1000).forEach(row => {
+                    if (sampleDates.size < 20) {
+                        sampleDates.add(row.formattedDate);
+                    }
+                });
+                console.log([...sampleDates].sort());
+            }
+            
             // Filter once by date to avoid repeated filtering
             const relevantData = allData.filter(row => dateSet.has(row.formattedDate));
+            
+            if (DEBUG_MODE) {
+                console.log(`Found ${relevantData.length} relevant records matching the specified dates`);
+            }
             
             // Process each date
             for (let dateIndex = 0; dateIndex < dates.length; dateIndex++) {
@@ -302,6 +322,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     let headerRowIndex = null;
                     let headerColumns = {};
                     
+                    if (DEBUG_MODE) {
+                        console.log(`Processing file: ${file.name}`);
+                    }
+                    
                     // First, look for header rows by examining first few rows
                     for (let r = range.s.r; r <= Math.min(range.s.r + 10, range.e.r); r++) {
                         let headerCandidates = {};
@@ -314,29 +338,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (cell && cell.t === 's') {
                                 const value = cell.v.toString().toLowerCase();
                                 
+                                if (DEBUG_MODE) {
+                                    console.log(`Row ${r}, Col ${c}: ${value}`);
+                                }
+                                
                                 if (value.includes('property') || value.includes('ada')) {
                                     headerCandidates.property = c;
                                     columnFound++;
-                                } else if (value.includes('date') || value.includes('tarih')) {
+                                } else if (value.includes('date') || value.includes('tarih') || value.includes('reading date')) {
                                     headerCandidates.date = c;
                                     columnFound++;
-                                } else if (value.includes('serial') || value.includes('seri')) {
+                                } else if (value.includes('serial') || value.includes('seri') || value.includes('device serial')) {
                                     headerCandidates.serial = c;
                                     columnFound++;
-                                } else if (value.includes('value') || value.includes('değer')) {
+                                } else if (value.includes('value') || value.includes('değer') || value.includes('reading value')) {
                                     headerCandidates.value = c;
                                     columnFound++;
-                                } else if (value.includes('type') || value.includes('tip')) {
+                                } else if (value.includes('type') || value.includes('tip') || value.includes('reading type')) {
                                     headerCandidates.type = c;
                                     columnFound++;
-                                } else if (value.includes('medium')) {
+                                } else if (value.includes('medium') || value.includes('reading medium')) {
                                     headerCandidates.medium = c;
                                     columnFound++;
                                 }
                             }
                         }
                         
-                        if (columnFound >= 3) { // We found at least 3 expected columns, likely the header row
+                        if (columnFound >= 2) { // We found at least 2 expected columns, likely the header row
                             headerRowIndex = r;
                             headerColumns = headerCandidates;
                             break;
@@ -357,11 +385,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         };
                     }
                     
+                    if (DEBUG_MODE) {
+                        console.log(`Header found at row ${headerRowIndex}`);
+                        console.log("Header column mapping:", headerColumns);
+                    }
+                    
                     // Extract data rows
                     const optimizedRows = [];
                     
                     for (let r = headerRowIndex + 1; r <= range.e.r; r++) {
                         // Check if we have a date in the date column
+                        if (headerColumns.date === undefined) {
+                            console.warn(`Date column not found in ${file.name}`);
+                            continue;
+                        }
+                        
                         const dateCell = sheet[XLSX.utils.encode_cell({r: r, c: headerColumns.date})];
                         if (!dateCell) continue;
                         
@@ -381,12 +419,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             continue;
                         }
                         
-                        // Format date as dd.mm.yyyy for filtering
-                        const formattedDate = dateValue.toLocaleDateString('tr-TR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        }).replace(/\//g, '.');
+                        // Format date as dd.mm.yyyy for filtering - IMPORTANT FIX HERE:
+                        // We need to ensure we're using consistent formatting for comparison
+                        const day = String(dateValue.getDate()).padStart(2, '0');
+                        const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+                        const year = dateValue.getFullYear();
+                        const formattedDate = `${day}.${month}.${year}`;
+                        
+                        // Debug every 100th row to avoid console spam
+                        if (DEBUG_MODE && r % 100 === 0) {
+                            console.log(`Row ${r} - Date: ${dateCell.v} → ${formattedDate}`);
+                        }
                         
                         // Get other cell values
                         const getCell = (colType) => {
@@ -395,6 +438,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             return cell ? cell.v : null;
                         };
                         
+                        // Try to detect type column properly
+                        const typeValue = getCell('type');
+                        
                         // Create optimized row object
                         optimizedRows.push({
                             adaIsmi: getCell('property') || adaIsmi,
@@ -402,9 +448,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             formattedDate: formattedDate,
                             serialNo: getCell('serial') || '',
                             value: getCell('value') || 0,
-                            type: getCell('type') || '',
+                            type: typeValue || '',
                             medium: getCell('medium') || ''
                         });
+                    }
+                    
+                    if (DEBUG_MODE) {
+                        console.log(`Found ${optimizedRows.length} rows with valid dates in ${file.name}`);
+                        // Show histogram of dates
+                        const dateHistogram = {};
+                        optimizedRows.forEach(row => {
+                            if (!dateHistogram[row.formattedDate]) dateHistogram[row.formattedDate] = 0;
+                            dateHistogram[row.formattedDate]++;
+                        });
+                        console.log("Date histogram:", dateHistogram);
                     }
                     
                     // Free memory
