@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIFI Excel Reader - Online Version</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- SheetJS library for Excel handling -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- FileSaver for downloading files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>BIFI Excel Reader</h1>
+            <p>Online Excel Dosya İşleme Aracı</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card">
+            <h2>BIFI Dosyaları Yükle</h2>
+            <p>Lütfen işlemek istediğiniz BIFI Excel dosyalarını seçin:</p>
+            <div class="file-upload">
+                <input type="file" id="fileUpload" multiple accept=".xlsx, .xls" />
+                <label for="fileUpload" class="button">Excel Dosyaları Seç</label>
+                <p id="fileCount">Seçilen dosya yok</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Parametreler</h2>
+            <div class="form-group">
+                <label for="dates">Tarihler (GG.AA.YYYY):</label>
+                <input type="text" id="dates" placeholder="Örn: 30.01.2024,31.01.2024,01.02.2024" />
+                <p class="tip">Virgülle ayırarak birden fazla tarih girebilirsiniz</p>
+            </div>
+            <div class="form-group">
+                <label>Okuma Tipi:</label>
+                <div class="radio-group">
+                    <input type="radio" id="typeCurrent" name="readingType" value="c" checked>
+                    <label for="typeCurrent">Current</label>
+                    
+                    <input type="radio" id="typeEndOfMonth" name="readingType" value="e">
+                    <label for="typeEndOfMonth">End of Month</label>
+                    
+                    <input type="radio" id="typeAll" name="readingType" value="a">
+                    <label for="typeAll">All</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Sonuç Formatı:</label>
+                <div class="radio-group">
+                    <input type="radio" id="combinedOutput" name="outputType" value="combined" checked>
+                    <label for="combinedOutput">Tek Excel Dosyası</label>
+                    
+                    <input type="radio" id="separateOutput" name="outputType" value="separate">
+                    <label for="separateOutput">Ayrı Excel Dosyaları</label>
+                </div>
+            </div>
+            <div class="button-row">
+                <button id="processButton" class="button primary">Dosyaları İşle</button>
+                <button id="clearButton" class="button">Temizle</button>
+            </div>
+        </div>
+
+        <div id="progressSection" class="card" style="display: none;">
+            <h2>İşleniyor...</h2>
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div id="progressText">0%</div>
+            </div>
+            <p id="statusText">Dosyalar yükleniyor...</p>
+        </div>
+
+        <div id="resultsSection" class="card" style="display: none;">
+            <h2>Sonuçlar</h2>
+            <div id="resultsContent"></div>
+            <div id="downloadButtons"></div>
+        </div>
+
+        <div class="card info">
+            <h2>Kullanım Bilgileri</h2>
+            <p>Bu araç, BIFI Excel dosyalarınızı tarayıcınızda işlemenize olanak sağlar. Tüm işlem tamamen yerel olarak gerçekleşir ve verileriniz sunucuya gönderilmez.</p>
+            
+            <h3>Adımlar:</h3>
+            <ol>
+                <li>BIFI_Reading içeren Excel dosyalarını seçin</li>
+                <li>İşlemek istediğiniz tarihleri girin (GG.AA.YYYY formatında, virgülle ayırın)</li>
+                <li>Okuma tipini seçin (Current, EndOfMonth veya All)</li>
+                <li>"Dosyaları İşle" butonuna tıklayın</li>
+                <li>İşlem tamamlandığında sonuç Excel dosyalarını indirin</li>
+            </ol>
+            
+            <h3>Sınırlamalar:</h3>
+            <p>Tarayıcı tabanlı işlem, çok büyük dosyalar için daha yavaş olabilir. Çok sayıda veya büyük dosya işlemek için <a href="https://github.com/YOUR-USERNAME/bifi-excel-reader" target="_blank">masaüstü versiyonumuzu</a> kullanmanızı öneririz.</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 - BIFI Excel Reader</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
