@@ -1,0 +1,111 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    line-height: 1.6;
+}
+.header {
+    text-align: center;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.container {
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+.button-container {
+    margin: 20px 0;
+    display: flex;
+    justify-content: space-between;
+}
+.button-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+button#extractBtn {
+    background-color: #02a807;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+button {
+    padding: 10px 15px;
+    background-color: #0078d7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+button:hover {
+    background-color: #005a9e;
+}
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+.log {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f0f0f0;
+    font-family: monospace;
+    margin-top: 20px;
+}
+.log p {
+    margin: 5px 0;
+}
+.divider {
+    border-top: 1px solid #ccc;
+    margin: 10px 0;
+}
+.status {
+    font-weight: bold;
+    text-align: center;
+    margin-top: 10px;
+}
+.status-info {
+    font-size: 12px;
+    margin-top: 5px;
+    color: #666;
+}
+.status-warning {
+    font-size: 12px;
+    margin-top: 5px;
+    color: #c03030;
+    font-weight: bold;
+}
+.hidden {
+    display: none;
+}
+.folder-path {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 5px;
+    word-break: break-all;
+}
+
+.info-box {
+    background-color: #e8f4ff;
+    border-left: 4px solid #0078d7;
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.info-box ul {
+    margin: 5px 0 5px 20px;
+    padding: 0;
+}
+
+.info-box p {
+    margin: 5px 0;
+}

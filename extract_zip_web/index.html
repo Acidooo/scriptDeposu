@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZIP Dosyası Çıkarma Aracı</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>ZIP Dosyası Çıkarma Aracı</h1>
+        <p>Kaynak dizindeki tüm ZIP dosyalarını hedef klasöre çıkarın</p>
+    </div>
+    
+    <div class="container">
+        <h2>Talimatlar</h2>
+        <ol>
+            <li>ZIP dosyalarını içeren klasörü seçmek için "Zipli Klasörü Seç" düğmesine tıklayın</li>
+            <li>Çıkarılan dosyaların gideceği yeri seçmek için "Hedef Klasör Seç" düğmesine tıklayın</li>
+            <li>Çıkarma işlemini başlatmak için "Tüm ZIP Dosyalarını Çıkar" düğmesine tıklayın</li>
+        </ol>
+        
+        <div class="folder-info">
+            <p>Kaynak Klasör: <span id="srcFolder" class="folder-path">Seçilmedi</span></p>
+            <p>Hedef Klasör: <span id="dstFolder" class="folder-path">Seçilmedi</span></p>
+        </div>
+        
+        <div class="info-box">
+            <p>Bu uygulama çıkarılan dosyaları adlarına göre şu klasörlere otomatik olarak yerleştirecektir:</p>
+            <ul>
+                <li>Montaj Raporu</li>
+                <li>Okuma Raporu</li>
+                <li>Bifi</li>
+                <li>Bifi_Reading</li>
+            </ul>
+        </div>
+        
+        <div class="button-container">
+            <div class="button-group">
+                <button id="selectSrcBtn">Zipli Klasörü Seç</button>
+                <div id="zipCounter" class="status-info">ZIP sayısı: 0</div>
+            </div>
+            <div class="button-group">
+                <button id="selectDstBtn">Hedef Klasör Seç</button>
+                <div id="folderWarning" class="status-warning hidden">Bu klasör boş değil!</div>
+            </div>
+            <div class="button-group">
+                <button id="extractBtn" disabled>Tüm ZIP Dosyalarını Çıkar</button>
+                <div id="progressCounter" class="status-info">0/0</div>
+            </div>
+        </div>
+        
+        <div id="status" class="status">Hazır</div>
+        
+        <div id="log" class="log">
+            <p>İşlem kayıtları burada görünecek...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
