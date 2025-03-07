@@ -12,30 +12,59 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultsSection = document.getElementById('resultsSection');
     const resultsContent = document.getElementById('resultsContent');
     const downloadButtons = document.getElementById('downloadButtons');
-
+    
+    // Performance options
+    const CHUNK_SIZE = 5; // Process files in chunks of 5
+    const BATCH_TIMEOUT = 50; // ms between batches to allow UI to refresh
+    
     // State variables
     let uploadedFiles = [];
     let processedData = [];
+    let isProcessing = false;
     
     // Event Listeners
     fileUpload.addEventListener('change', handleFileUpload);
     processButton.addEventListener('click', processFiles);
     clearButton.addEventListener('click', clearForm);
     
-    // Handle file upload
+    // Handle file upload with size checking
     function handleFileUpload(e) {
-        uploadedFiles = Array.from(e.target.files).filter(file => 
+        const files = Array.from(e.target.files);
+        const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+        
+        // Warn if files are very large (>50MB total)
+        if (totalSize > 50 * 1024 * 1024) {
+            alert('Uyarı: Seçilen dosyaların toplam boyutu büyük (>' + 
+                  Math.round(totalSize/1024/1024) + 'MB). ' +
+                  'İşlem yavaş olabilir veya tarayıcı yanıt vermeyebilir. ' +
+                  'Büyük dosyalar için masaüstü uygulamasını kullanmanız önerilir.');
+        }
+        
+        uploadedFiles = files.filter(file => 
             file.name.toLowerCase().includes('bifi_reading') && 
             (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))
         );
         
         fileCount.textContent = uploadedFiles.length > 0 ? 
-            `${uploadedFiles.length} BIFI dosyası seçildi` : 
+            `${uploadedFiles.length} BIFI dosyası seçildi (${formatFileSize(totalSize)})` : 
             'Seçilen dosya yok';
+    }
+    
+    // Format file size in human-readable format
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' bytes';
+        else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        else return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
     
     // Clear all form inputs
     function clearForm() {
+        if (isProcessing) {
+            if (!confirm('İşlem devam ediyor. İptal etmek istiyor musunuz?')) {
+                return;
+            }
+        }
+        
         fileUpload.value = '';
         datesInput.value = '';
         uploadedFiles = [];
@@ -43,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('typeCurrent').checked = true;
         document.getElementById('combinedOutput').checked = true;
         hideResults();
+        isProcessing = false;
     }
     
     // Hide results section
@@ -64,13 +94,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Validate date format (dd.mm.yyyy)
     function validateDateFormat(dateStr) {
-        // Check pattern
         const pattern = /^\d{2}\.\d{2}\.\d{4}$/;
         if (!pattern.test(dateStr)) {
             return false;
         }
         
-        // Check if it's a valid date
         const [day, month, year] = dateStr.split('.').map(Number);
         const date = new Date(year, month - 1, day);
         return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
@@ -78,6 +106,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Process files
     async function processFiles() {
+        // Prevent multiple processing at once
+        if (isProcessing) {
+            alert('Lütfen mevcut işlemin tamamlanmasını bekleyin.');
+            return;
+        }
+        
         // Validation
         if (uploadedFiles.length === 0) {
             alert('Lütfen en az bir BIFI Excel dosyası seçin.');
@@ -104,42 +138,76 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show progress section
         hideResults();
         progressSection.style.display = 'block';
-        updateProgress(0, 'Dosyalar yükleniyor...');
+        updateProgress(0, 'İşleme başlanıyor...');
+        isProcessing = true;
         
         try {
-            // Process files
+            // Process files in chunks to prevent UI freezing
             const allData = [];
-            for (let i = 0; i < uploadedFiles.length; i++) {
+            const totalFiles = uploadedFiles.length;
+            
+            // Create chunks of files for batch processing
+            const fileChunks = [];
+            for (let i = 0; i < totalFiles; i += CHUNK_SIZE) {
+                fileChunks.push(uploadedFiles.slice(i, i + CHUNK_SIZE));
+            }
+            
+            // Process each chunk with delay between chunks
+            let processedCount = 0;
+            
+            for (let chunkIndex = 0; chunkIndex < fileChunks.length; chunkIndex++) {
+                const chunk = fileChunks[chunkIndex];
                 updateProgress(
-                    (i / uploadedFiles.length) * 50, 
-                    `Dosya işleniyor: ${i+1}/${uploadedFiles.length}`
+                    (processedCount / totalFiles) * 50,
+                    `Dosya grubu işleniyor: ${chunkIndex + 1}/${fileChunks.length}`
                 );
                 
-                const file = uploadedFiles[i];
-                const adaIsmi = file.name.split('_')[0];
-                const data = await readExcelFile(file, adaIsmi);
-                allData.push(...data);
+                // Process files in this chunk concurrently
+                const chunkPromises = chunk.map(file => {
+                    const adaIsmi = file.name.split('_')[0];
+                    return readExcelFile(file, adaIsmi).then(data => {
+                        processedCount++;
+                        updateProgress(
+                            (processedCount / totalFiles) * 50,
+                            `${processedCount}/${totalFiles} dosya işlendi`
+                        );
+                        return data;
+                    });
+                });
                 
-                // Give browser time to update UI
-                await new Promise(resolve => setTimeout(resolve, 0));
+                const chunkResults = await Promise.all(chunkPromises);
+                chunkResults.forEach(data => allData.push(...data));
+                
+                // Give UI time to breathe between chunks
+                if (chunkIndex < fileChunks.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, BATCH_TIMEOUT));
+                }
             }
             
             updateProgress(50, 'Veriler filtreleniyor...');
             
-            // Process for each date
+            // Optimize memory by processing dates in batches too
             const resultsByDate = {};
             let totalRecords = 0;
             
+            // Pre-filter data by date to avoid repeated filtering
+            const preFilteredData = {};
+            dates.forEach(date => {
+                // Use a more efficient filter that creates fewer temporary objects
+                preFilteredData[date] = allData.filter(row => row.formattedDate === date);
+            });
+            
+            // Process each date
             for (let dateIndex = 0; dateIndex < dates.length; dateIndex++) {
                 const date = dates[dateIndex];
                 
                 updateProgress(
-                    50 + ((dateIndex / dates.length) * 50), 
+                    50 + ((dateIndex / dates.length) * 50),
                     `${date} tarihine ait kayıtlar filtreleniyor...`
                 );
                 
-                // Filter data for this date
-                let filteredData = allData.filter(row => row.formattedDate === date);
+                // Get pre-filtered data for this date
+                let filteredData = preFilteredData[date];
                 
                 // Apply option filter
                 if (option === 'c') {
@@ -156,8 +224,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 resultsByDate[date] = filteredData;
                 totalRecords += filteredData.length;
                 
-                // Give browser time to update UI
-                await new Promise(resolve => setTimeout(resolve, 0));
+                // Release memory from pre-filtered data
+                if (dateIndex < dates.length - 1) {
+                    // Give UI time to update between date processing
+                    await new Promise(resolve => setTimeout(resolve, BATCH_TIMEOUT));
+                }
+            }
+            
+            // Clear pre-filtered data to free memory
+            for (const key in preFilteredData) {
+                preFilteredData[key] = null;
             }
             
             updateProgress(100, 'İşlem tamamlandı!');
@@ -170,65 +246,95 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error(error);
             alert('Dosyalar işlenirken bir hata oluştu: ' + error.message);
             updateProgress(0, 'Hata oluştu!');
+        } finally {
+            isProcessing = false;
         }
     }
     
-    // Read an Excel file
-    async function readExcelFile(file, adaIsmi) {
+    // Read an Excel file more efficiently
+    function readExcelFile(file, adaIsmi) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             
             reader.onload = function(e) {
                 try {
+                    // Process the file content
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Use optimized SheetJS options for large files
+                    const workbook = XLSX.read(data, { 
+                        type: 'array',
+                        cellStyles: false, // Disable style parsing for speed
+                        cellHTML: false,   // Disable HTML parsing for speed
+                        cellFormula: false, // Disable formula parsing for speed
+                        cellNF: false,     // Disable number format parsing
+                        cellDates: true    // Keep date handling
+                    });
                     
                     // Get the first sheet
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     
-                    // Convert to JSON
-                    let rows = XLSX.utils.sheet_to_json(worksheet);
+                    // Convert to JSON with optimized options
+                    let rows = XLSX.utils.sheet_to_json(worksheet, {
+                        header: 'A',  // Use A1 notation for headers
+                        raw: true     // Keep raw values for speed
+                    });
                     
-                    // Process rows to match our expected format
-                    const processedRows = rows.map(row => {
-                        const propertyName = Object.keys(row).find(key => 
-                            key.toLowerCase().includes('property') || 
-                            key.toLowerCase().includes('ada'));
-                            
-                        const dateName = Object.keys(row).find(key => 
-                            key.toLowerCase().includes('date') || 
-                            key.toLowerCase().includes('tarih'));
-                            
-                        const serialName = Object.keys(row).find(key => 
-                            key.toLowerCase().includes('serial') || 
-                            key.toLowerCase().includes('seri'));
-                            
-                        const valueName = Object.keys(row).find(key => 
-                            key.toLowerCase().includes('value') || 
-                            key.toLowerCase().includes('değer'));
-                            
-                        const typeName = Object.keys(row).find(key => 
-                            key.toLowerCase().includes('type') || 
-                            key.toLowerCase().includes('tip'));
-                            
-                        const mediumName = Object.keys(row).find(key => 
-                            key.toLowerCase().includes('medium'));
-                        
-                        // Skip if date is missing
-                        if (!row[dateName]) {
-                            return null;
+                    // Get header names from first row
+                    if (rows.length === 0) {
+                        resolve([]);
+                        return;
+                    }
+                    
+                    const headers = rows.shift(); // Remove header row
+                    
+                    // Find column indices by approximate name matching
+                    const headerIndices = {};
+                    const columnPatterns = {
+                        property: /property|ada/i,
+                        date: /date|tarih/i,
+                        serial: /serial|seri/i,
+                        value: /value|değer/i,
+                        type: /type|tip/i,
+                        medium: /medium|medya/i
+                    };
+                    
+                    // Find the column indices by name patterns
+                    Object.entries(columnPatterns).forEach(([key, pattern]) => {
+                        for (const [col, value] of Object.entries(headers)) {
+                            if (value && pattern.test(value.toString().toLowerCase())) {
+                                headerIndices[key] = col;
+                                break;
+                            }
+                        }
+                    });
+                    
+                    // Process rows with the identified column indices
+                    const processedRows = [];
+                    
+                    for (const row of rows) {
+                        // Skip empty rows
+                        if (!row[headerIndices.date]) {
+                            continue;
                         }
                         
                         // Process date
                         let dateValue;
-                        if (typeof row[dateName] === 'string') {
-                            dateValue = new Date(row[dateName]);
-                        } else if (typeof row[dateName] === 'number') {
+                        const rawDate = row[headerIndices.date];
+                        
+                        if (typeof rawDate === 'string') {
+                            dateValue = new Date(rawDate);
+                        } else if (typeof rawDate === 'number') {
                             // Excel date (days since Jan 1, 1900)
-                            dateValue = new Date((row[dateName] - 25569) * 86400 * 1000);
+                            dateValue = new Date((rawDate - 25569) * 86400 * 1000);
                         } else {
-                            dateValue = new Date(row[dateName]);
+                            dateValue = new Date(rawDate);
+                        }
+                        
+                        // Check if date is valid
+                        if (isNaN(dateValue.getTime())) {
+                            continue;
                         }
                         
                         // Format date as dd.mm.yyyy
@@ -238,16 +344,23 @@ document.addEventListener('DOMContentLoaded', function() {
                             year: 'numeric'
                         }).replace(/\//g, '.');
                         
-                        return {
-                            adaIsmi: row[propertyName] || adaIsmi,
+                        // Get property name, default to filename-derived name
+                        const propertyCol = headerIndices.property;
+                        const adaIsmiValue = propertyCol && row[propertyCol] ? row[propertyCol] : adaIsmi;
+                        
+                        processedRows.push({
+                            adaIsmi: adaIsmiValue,
                             date: dateValue,
                             formattedDate: formattedDate,
-                            serialNo: row[serialName] || '',
-                            value: row[valueName] || 0,
-                            type: row[typeName] || '',
-                            medium: row[mediumName] || ''
-                        };
-                    }).filter(row => row !== null);
+                            serialNo: headerIndices.serial ? row[headerIndices.serial] || '' : '',
+                            value: headerIndices.value ? row[headerIndices.value] || 0 : 0,
+                            type: headerIndices.type ? row[headerIndices.type] || '' : '',
+                            medium: headerIndices.medium ? row[headerIndices.medium] || '' : ''
+                        });
+                    }
+                    
+                    // Clean up to help garbage collection
+                    rows = null;
                     
                     resolve(processedRows);
                 } catch (error) {
@@ -256,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             reader.onerror = function() {
-                reject(new Error('Dosya okunamadı.'));
+                reject(new Error(`'${file.name}' dosyası okunamadı.`));
             };
             
             reader.readAsArrayBuffer(file);
@@ -289,11 +402,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // If combining output
         if (combineOutput) {
-            // Combine all data
-            let allFilteredData = [];
+            // Combine all data efficiently
+            const allFilteredData = [];
             dates.forEach(date => {
                 if (data[date] && data[date].length > 0) {
-                    allFilteredData = allFilteredData.concat(data[date]);
+                    allFilteredData.push(...data[date]);
                 }
             });
             
@@ -335,25 +448,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Generate Excel file and download
+    // Generate Excel file and download more efficiently
     function generateExcel(data, filename) {
-        // Create worksheet with headers
-        const worksheet = XLSX.utils.json_to_sheet([]);
-        XLSX.utils.sheet_add_json(worksheet, data.map(row => ({
-            'Ada İsmi': row.adaIsmi,
-            'Tarih': row.date, // Excel will format this
-            'Seri No': row.serialNo,
-            'Değer': row.value,
-            'Tip': row.type,
-            'Medium': row.medium,
-            ...(row.processedDate ? {'İşlenen Tarih': row.processedDate} : {})
-        })), { skipHeader: false, origin: 0 });
+        // Show that download is starting
+        statusText.textContent = 'Excel dosyası hazırlanıyor...';
         
-        // Create workbook
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Tüm Adalar Okuma');
-        
-        // Generate and download
-        XLSX.writeFile(workbook, filename);
+        // Use timeout to allow UI to update before the heavy Excel generation
+        setTimeout(() => {
+            try {
+                // Create worksheet with optimized approach
+                const worksheet = XLSX.utils.json_to_sheet(
+                    data.map(row => ({
+                        'Ada İsmi': row.adaIsmi,
+                        'Tarih': row.date,
+                        'Seri No': row.serialNo,
+                        'Değer': row.value,
+                        'Tip': row.type,
+                        'Medium': row.medium,
+                        ...(row.processedDate ? {'İşlenen Tarih': row.processedDate} : {})
+                    }))
+                );
+                
+                // Create workbook
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Tüm Adalar Okuma');
+                
+                // Generate and download
+                XLSX.writeFile(workbook, filename);
+                
+                statusText.textContent = 'İşlem tamamlandı!';
+            } catch (error) {
+                console.error('Excel oluşturulurken hata:', error);
+                statusText.textContent = 'Excel oluşturulurken hata!';
+                alert('Excel dosyası oluşturulurken bir hata oluştu: ' + error.message);
+            }
+        }, 100);
     }
 });

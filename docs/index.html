@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIFI Excel Reader - Online Version</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <!-- SheetJS library for Excel handling -->
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- Updated SheetJS library to the latest version for better performance -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <!-- FileSaver for downloading files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- Memory stats for debugging (remove in production) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/memory-stats@1.0.2/memory-stats.min.js"></script> -->
 </head>
 <body>
     <header>
@@ -95,8 +97,17 @@
                 <li>İşlem tamamlandığında sonuç Excel dosyalarını indirin</li>
             </ol>
             
-            <h3>Sınırlamalar:</h3>
-            <p>Tarayıcı tabanlı işlem, çok büyük dosyalar için daha yavaş olabilir. Çok sayıda veya büyük dosya işlemek için <a href="https://github.com/YOUR-USERNAME/bifi-excel-reader" target="_blank">masaüstü versiyonumuzu</a> kullanmanızı öneririz.</p>
+        </div>
+
+        <div class="card info">
+            <h2>Performans İpuçları</h2>
+            <ul>
+                <li>Büyük Excel dosyalarını (>10MB) işlerken tarayıcı performansı düşebilir</li>
+                <li>En iyi performans için daha küçük gruplar halinde dosya yükleyin (5-10 dosya)</li>
+                <li>İşlem sırasında diğer sekmeleri veya programları kapatmak yardımcı olabilir</li>
+                <li>Çok sayıda veya büyük dosyalar için masaüstü versiyonu kullanmanız önerilir</li>
+                <li>Chrome veya Edge tarayıcılarında daha iyi performans elde edilebilir</li>
+            </ul>
         </div>
     </main>
 
