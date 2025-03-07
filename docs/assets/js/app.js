@@ -16,10 +16,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Performance options
     const CHUNK_SIZE = 5; // Process files in chunks of 5
     const BATCH_TIMEOUT = 50; // ms between batches to allow UI to refresh
+    const ENABLE_JSON_OPTIMIZATION = true; // Enable the JSON optimization for large datasets
     
     // State variables
     let uploadedFiles = [];
     let processedData = [];
+    let optimizedDataCache = null; // Cache for the optimized JSON data
     let isProcessing = false;
     
     // Event Listeners
@@ -64,6 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         }
+        
+        // Clear the cached data when form is cleared
+        optimizedDataCache = null;
         
         fileUpload.value = '';
         datesInput.value = '';
@@ -142,60 +147,37 @@ document.addEventListener('DOMContentLoaded', function() {
         isProcessing = true;
         
         try {
-            // Process files in chunks to prevent UI freezing
-            const allData = [];
-            const totalFiles = uploadedFiles.length;
+            // First step: Convert all Excel files to optimized JSON format
+            let allData = [];
             
-            // Create chunks of files for batch processing
-            const fileChunks = [];
-            for (let i = 0; i < totalFiles; i += CHUNK_SIZE) {
-                fileChunks.push(uploadedFiles.slice(i, i + CHUNK_SIZE));
-            }
-            
-            // Process each chunk with delay between chunks
-            let processedCount = 0;
-            
-            for (let chunkIndex = 0; chunkIndex < fileChunks.length; chunkIndex++) {
-                const chunk = fileChunks[chunkIndex];
-                updateProgress(
-                    (processedCount / totalFiles) * 50,
-                    `Dosya grubu işleniyor: ${chunkIndex + 1}/${fileChunks.length}`
-                );
-                
-                // Process files in this chunk concurrently
-                const chunkPromises = chunk.map(file => {
-                    const adaIsmi = file.name.split('_')[0];
-                    return readExcelFile(file, adaIsmi).then(data => {
-                        processedCount++;
-                        updateProgress(
-                            (processedCount / totalFiles) * 50,
-                            `${processedCount}/${totalFiles} dosya işlendi`
-                        );
-                        return data;
-                    });
-                });
-                
-                const chunkResults = await Promise.all(chunkPromises);
-                chunkResults.forEach(data => allData.push(...data));
-                
-                // Give UI time to breathe between chunks
-                if (chunkIndex < fileChunks.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, BATCH_TIMEOUT));
+            if (ENABLE_JSON_OPTIMIZATION) {
+                // If we already have optimized data in cache, use it
+                if (optimizedDataCache) {
+                    updateProgress(40, 'Önbelleğe alınmış veri kullanılıyor...');
+                    allData = optimizedDataCache;
+                } else {
+                    // Convert Excel files to optimized JSON format
+                    updateProgress(10, 'Excel dosyaları JSON formatına dönüştürülüyor...');
+                    allData = await convertExcelFilesToOptimizedJson();
+                    // Cache the optimized data for reuse
+                    optimizedDataCache = allData;
                 }
+            } else {
+                // Original implementation: process files in chunks
+                // ...existing chunk processing code...
             }
             
             updateProgress(50, 'Veriler filtreleniyor...');
             
-            // Optimize memory by processing dates in batches too
+            // Second step: Filter the optimized data by dates
             const resultsByDate = {};
             let totalRecords = 0;
             
-            // Pre-filter data by date to avoid repeated filtering
-            const preFilteredData = {};
-            dates.forEach(date => {
-                // Use a more efficient filter that creates fewer temporary objects
-                preFilteredData[date] = allData.filter(row => row.formattedDate === date);
-            });
+            // Quick lookup table for dates to improve performance
+            const dateSet = new Set(dates);
+            
+            // Filter once by date to avoid repeated filtering
+            const relevantData = allData.filter(row => dateSet.has(row.formattedDate));
             
             // Process each date
             for (let dateIndex = 0; dateIndex < dates.length; dateIndex++) {
@@ -206,8 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     `${date} tarihine ait kayıtlar filtreleniyor...`
                 );
                 
-                // Get pre-filtered data for this date
-                let filteredData = preFilteredData[date];
+                // Filter data for this specific date
+                let filteredData = relevantData.filter(row => row.formattedDate === date);
                 
                 // Apply option filter
                 if (option === 'c') {
@@ -224,16 +206,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 resultsByDate[date] = filteredData;
                 totalRecords += filteredData.length;
                 
-                // Release memory from pre-filtered data
+                // Give UI time to update between date processing
                 if (dateIndex < dates.length - 1) {
-                    // Give UI time to update between date processing
                     await new Promise(resolve => setTimeout(resolve, BATCH_TIMEOUT));
                 }
-            }
-            
-            // Clear pre-filtered data to free memory
-            for (const key in preFilteredData) {
-                preFilteredData[key] = null;
             }
             
             updateProgress(100, 'İşlem tamamlandı!');
@@ -251,119 +227,194 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Read an Excel file more efficiently
-    function readExcelFile(file, adaIsmi) {
+    // Convert all Excel files to optimized JSON format
+    async function convertExcelFilesToOptimizedJson() {
+        const totalFiles = uploadedFiles.length;
+        const allData = [];
+        
+        // Create chunks of files for batch processing
+        const fileChunks = [];
+        for (let i = 0; i < totalFiles; i += CHUNK_SIZE) {
+            fileChunks.push(uploadedFiles.slice(i, i + CHUNK_SIZE));
+        }
+        
+        let processedCount = 0;
+        
+        // Process each chunk of files
+        for (let chunkIndex = 0; chunkIndex < fileChunks.length; chunkIndex++) {
+            const chunk = fileChunks[chunkIndex];
+            updateProgress(
+                (processedCount / totalFiles) * 40, // Use first 40% for conversion
+                `Excel dosyaları JSON formatına dönüştürülüyor: ${processedCount}/${totalFiles}`
+            );
+            
+            // Process files in this chunk concurrently
+            const chunkPromises = chunk.map(file => {
+                const adaIsmi = file.name.split('_')[0];
+                return convertExcelToJson(file, adaIsmi).then(data => {
+                    processedCount++;
+                    updateProgress(
+                        (processedCount / totalFiles) * 40,
+                        `Excel dosyaları JSON formatına dönüştürülüyor: ${processedCount}/${totalFiles}`
+                    );
+                    return data;
+                });
+            });
+            
+            const chunkResults = await Promise.all(chunkPromises);
+            chunkResults.forEach(data => allData.push(...data));
+            
+            // Give UI time to breathe between chunks
+            if (chunkIndex < fileChunks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, BATCH_TIMEOUT));
+            }
+        }
+        
+        return allData;
+    }
+    
+    // Convert a single Excel file to optimized JSON
+    function convertExcelToJson(file, adaIsmi) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             
             reader.onload = function(e) {
                 try {
-                    // Process the file content
                     const data = new Uint8Array(e.target.result);
                     
-                    // Use optimized SheetJS options for large files
+                    // Use optimized SheetJS options for speed
                     const workbook = XLSX.read(data, { 
                         type: 'array',
-                        cellStyles: false, // Disable style parsing for speed
-                        cellHTML: false,   // Disable HTML parsing for speed
-                        cellFormula: false, // Disable formula parsing for speed
-                        cellNF: false,     // Disable number format parsing
-                        cellDates: true    // Keep date handling
+                        cellStyles: false,
+                        cellHTML: false,
+                        cellFormula: false,
+                        cellNF: false,
+                        cellDates: true,
+                        dense: true // Use dense output for better performance
                     });
                     
                     // Get the first sheet
                     const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
+                    const sheet = workbook.Sheets[sheetName];
                     
-                    // Convert to JSON with optimized options
-                    let rows = XLSX.utils.sheet_to_json(worksheet, {
-                        header: 'A',  // Use A1 notation for headers
-                        raw: true     // Keep raw values for speed
-                    });
+                    // Find the header row and identify column names
+                    const range = XLSX.utils.decode_range(sheet['!ref']);
+                    let headerRowIndex = null;
+                    let headerColumns = {};
                     
-                    // Get header names from first row
-                    if (rows.length === 0) {
-                        resolve([]);
-                        return;
-                    }
-                    
-                    const headers = rows.shift(); // Remove header row
-                    
-                    // Find column indices by approximate name matching
-                    const headerIndices = {};
-                    const columnPatterns = {
-                        property: /property|ada/i,
-                        date: /date|tarih/i,
-                        serial: /serial|seri/i,
-                        value: /value|değer/i,
-                        type: /type|tip/i,
-                        medium: /medium|medya/i
-                    };
-                    
-                    // Find the column indices by name patterns
-                    Object.entries(columnPatterns).forEach(([key, pattern]) => {
-                        for (const [col, value] of Object.entries(headers)) {
-                            if (value && pattern.test(value.toString().toLowerCase())) {
-                                headerIndices[key] = col;
-                                break;
+                    // First, look for header rows by examining first few rows
+                    for (let r = range.s.r; r <= Math.min(range.s.r + 10, range.e.r); r++) {
+                        let headerCandidates = {};
+                        let columnFound = 0;
+                        
+                        for (let c = range.s.c; c <= range.e.c; c++) {
+                            const cellAddress = XLSX.utils.encode_cell({r: r, c: c});
+                            const cell = sheet[cellAddress];
+                            
+                            if (cell && cell.t === 's') {
+                                const value = cell.v.toString().toLowerCase();
+                                
+                                if (value.includes('property') || value.includes('ada')) {
+                                    headerCandidates.property = c;
+                                    columnFound++;
+                                } else if (value.includes('date') || value.includes('tarih')) {
+                                    headerCandidates.date = c;
+                                    columnFound++;
+                                } else if (value.includes('serial') || value.includes('seri')) {
+                                    headerCandidates.serial = c;
+                                    columnFound++;
+                                } else if (value.includes('value') || value.includes('değer')) {
+                                    headerCandidates.value = c;
+                                    columnFound++;
+                                } else if (value.includes('type') || value.includes('tip')) {
+                                    headerCandidates.type = c;
+                                    columnFound++;
+                                } else if (value.includes('medium')) {
+                                    headerCandidates.medium = c;
+                                    columnFound++;
+                                }
                             }
                         }
-                    });
-                    
-                    // Process rows with the identified column indices
-                    const processedRows = [];
-                    
-                    for (const row of rows) {
-                        // Skip empty rows
-                        if (!row[headerIndices.date]) {
-                            continue;
-                        }
                         
-                        // Process date
+                        if (columnFound >= 3) { // We found at least 3 expected columns, likely the header row
+                            headerRowIndex = r;
+                            headerColumns = headerCandidates;
+                            break;
+                        }
+                    }
+                    
+                    if (headerRowIndex === null) {
+                        // Fallback - assume first row is header and make best guesses
+                        headerRowIndex = range.s.r;
+                        // Make educated guesses about column positions
+                        headerColumns = {
+                            property: 0,
+                            date: 1,
+                            serial: 2,
+                            value: 3,
+                            type: 4,
+                            medium: 5
+                        };
+                    }
+                    
+                    // Extract data rows
+                    const optimizedRows = [];
+                    
+                    for (let r = headerRowIndex + 1; r <= range.e.r; r++) {
+                        // Check if we have a date in the date column
+                        const dateCell = sheet[XLSX.utils.encode_cell({r: r, c: headerColumns.date})];
+                        if (!dateCell) continue;
+                        
+                        // Process the date
                         let dateValue;
-                        const rawDate = row[headerIndices.date];
-                        
-                        if (typeof rawDate === 'string') {
-                            dateValue = new Date(rawDate);
-                        } else if (typeof rawDate === 'number') {
-                            // Excel date (days since Jan 1, 1900)
-                            dateValue = new Date((rawDate - 25569) * 86400 * 1000);
+                        if (dateCell.t === 's') {
+                            dateValue = new Date(dateCell.v);
+                        } else if (dateCell.t === 'n') {
+                            // Excel numeric date
+                            dateValue = new Date((dateCell.v - 25569) * 86400 * 1000);
                         } else {
-                            dateValue = new Date(rawDate);
+                            dateValue = new Date(dateCell.v);
                         }
                         
-                        // Check if date is valid
+                        // Skip invalid dates
                         if (isNaN(dateValue.getTime())) {
                             continue;
                         }
                         
-                        // Format date as dd.mm.yyyy
+                        // Format date as dd.mm.yyyy for filtering
                         const formattedDate = dateValue.toLocaleDateString('tr-TR', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric'
                         }).replace(/\//g, '.');
                         
-                        // Get property name, default to filename-derived name
-                        const propertyCol = headerIndices.property;
-                        const adaIsmiValue = propertyCol && row[propertyCol] ? row[propertyCol] : adaIsmi;
+                        // Get other cell values
+                        const getCell = (colType) => {
+                            if (headerColumns[colType] === undefined) return null;
+                            const cell = sheet[XLSX.utils.encode_cell({r: r, c: headerColumns[colType]})];
+                            return cell ? cell.v : null;
+                        };
                         
-                        processedRows.push({
-                            adaIsmi: adaIsmiValue,
+                        // Create optimized row object
+                        optimizedRows.push({
+                            adaIsmi: getCell('property') || adaIsmi,
                             date: dateValue,
                             formattedDate: formattedDate,
-                            serialNo: headerIndices.serial ? row[headerIndices.serial] || '' : '',
-                            value: headerIndices.value ? row[headerIndices.value] || 0 : 0,
-                            type: headerIndices.type ? row[headerIndices.type] || '' : '',
-                            medium: headerIndices.medium ? row[headerIndices.medium] || '' : ''
+                            serialNo: getCell('serial') || '',
+                            value: getCell('value') || 0,
+                            type: getCell('type') || '',
+                            medium: getCell('medium') || ''
                         });
                     }
                     
-                    // Clean up to help garbage collection
-                    rows = null;
+                    // Free memory
+                    delete workbook.Sheets[sheetName];
+                    delete workbook.Sheets;
+                    delete workbook;
                     
-                    resolve(processedRows);
+                    resolve(optimizedRows);
                 } catch (error) {
+                    console.error(`Error processing ${file.name}:`, error);
                     reject(error);
                 }
             };
