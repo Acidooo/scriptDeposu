@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIFI Excel İşleme Aracı</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>BIFI Tarih Filtreleme v0.1</h1>
+
+        <div class="upload-section">
+            <h2>1. Excel Dosyalarını Yükle</h2>
+            <div class="file-upload">
+                <label for="excelFiles" class="upload-btn">Excel Dosyalarını Seç</label>
+                <input type="file" id="excelFiles" multiple accept=".xlsx" />
+                <div id="fileList" class="file-list"></div>
+            </div>
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+                <div id="progressStatus" class="progress-status">0%</div>
+            </div>
+            <div id="fileCounter" class="file-counter"></div>
+            <div id="uploadStatus" class="status"></div>
+        </div>
+
+        <div class="filter-section">
+            <h2>2. Filtreleme Seçenekleri</h2>
+            <div class="form-group">
+                <label for="dateInput">Tarihleri Girin (örn: 30.01.2024,31.01.2024):</label>
+                <input type="text" id="dateInput" placeholder="GG.AA.YYYY,GG.AA.YYYY,...">
+            </div>
+            <div class="form-group">
+                <label>Okuma Tipi:</label>
+                <div class="radio-group">
+                    <input type="radio" id="optionCurrent" name="readingType" value="c" checked>
+                    <label for="optionCurrent">Current</label>
+
+                    <input type="radio" id="optionEndOfMonth" name="readingType" value="e">
+                    <label for="optionEndOfMonth">End of Month</label>
+
+                    <input type="radio" id="optionAll" name="readingType" value="a">
+                    <label for="optionAll">All</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Çıktı Seçenekleri:</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="combineExcel" checked>
+                    <label for="combineExcel">Tüm sonuçları tek Excel dosyasında birleştir</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autoJsonDownload">
+                    <label for="autoJsonDownload">(Debug) JSON verisini otomatik indir</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-section">
+            <button id="processBtn" class="process-btn" disabled>Dosyaları İşle</button>
+            <button id="downloadJsonBtn" class="download-btn" disabled>JSON Verisini İndir</button>
+        </div>
+
+        <div id="resultsSection" class="results-section">
+            <h2>3. Sonuçlar</h2>
+            <div id="processingStatus" class="status"></div>
+            <div id="resultsInfo" class="results-info"></div>
+            <div id="downloadLinks" class="download-links"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
