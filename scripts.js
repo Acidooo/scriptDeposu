@@ -40,15 +40,15 @@ function getRepoName() {
     return null;
 }
 
-// Function to automatically detect available directories
+// Function to automatically detect available directories using GitHub REST API
 async function detectDirectories() {
     try {
-        // Always default to predefined list first
+        // Use predefined list as fallback
         let directories = Object.keys(toolDescriptions);
         
         if (isGitHubPages()) {
             try {
-                // We're on GitHub Pages, use Octokit for GitHub API
+                // Extract username and repository name from the URL
                 const username = window.location.hostname.split('.')[0];
                 const repoName = getRepoName();
                 
@@ -56,28 +56,30 @@ async function detectDirectories() {
                     throw new Error("Could not determine repository name");
                 }
                 
-                // Using Octokit without authentication for public repositories
-                const octokit = new Octokit();
+                // Using GitHub REST API directly (no authentication needed for public repos)
+                const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/`;
+                console.log(`Fetching directories from: ${apiUrl}`);
                 
-                const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-                    owner: username,
-                    repo: repoName,
-                    path: '',
+                const response = await fetch(apiUrl, {
                     headers: {
-                        'X-GitHub-Api-Version': '2022-11-28'
+                        'Accept': 'application/vnd.github.v3+json'
                     }
                 });
                 
-                if (response.status === 200 && Array.isArray(response.data)) {
-                    // Filter for directories
-                    const apiDirectories = response.data
-                        .filter(item => item.type === 'dir')
-                        .map(item => item.name);
-                        
-                    if (apiDirectories.length > 0) {
-                        directories = apiDirectories;
-                        console.log("Successfully fetched directories via GitHub API:", directories);
-                    }
+                if (!response.ok) {
+                    throw new Error(`GitHub API returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Filter for directories only
+                const apiDirectories = data
+                    .filter(item => item.type === 'dir')
+                    .map(item => item.name);
+                    
+                if (apiDirectories.length > 0) {
+                    directories = apiDirectories;
+                    console.log("Successfully detected directories:", directories);
                 }
             } catch (apiError) {
                 console.warn("GitHub API error:", apiError.message);
