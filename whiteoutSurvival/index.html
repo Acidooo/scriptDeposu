@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhiteOut Survival Gift Code Tool</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>WhiteOut Survival Gift Code Tool</h1>
+        <p>Activate gift codes for multiple WhiteOut Survival accounts</p>
+    </div>
+
+    <div class="container">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Enter your WhiteOut Survival Account IDs (separated by commas)</li>
+            <li>Enter the gift code to activate</li>
+            <li>Click "Activate Gift Code" to process all accounts</li>
+        </ol>
+
+        <div class="info-box">
+            <p>This tool:</p>
+            <ul>
+                <li>Retrieves player information from the game API</li>
+                <li>Activates gift codes for all provided account IDs</li>
+                <li>Shows API responses for debugging purposes</li>
+            </ul>
+        </div>
+
+        <div class="input-container">
+            <div class="input-group">
+                <label for="accountIds">Account IDs (comma separated)</label>
+                <textarea id="accountIds" placeholder="e.g. 300514470, 322626600, 355412265">300514470, 322626600, 355412265</textarea>
+            </div>
+
+            <div class="input-group">
+                <label for="giftCode">Gift Code</label>
+                <input type="text" id="giftCode" placeholder="e.g. W4z7RYWVd">
+            </div>
+
+            <button id="activateBtn">Activate Gift Code</button>
+        </div>
+
+        <div id="status" class="status">Ready</div>
+        
+        <div id="log" class="log">
+            <p>API responses will appear here...</p>
+        </div>
+    </div>
+
+    <script src="api-client.js"></script>
+</body>
+</html>

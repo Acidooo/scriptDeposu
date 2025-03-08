@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Okuma Raporları Birleştirici</title>
+    <!-- SheetJS library for Excel processing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Excel Okuma Raporları Birleştirici</h1>
+        <p>Çoklu Excel dosyalarından okuma verilerini çıkarıp tek bir dosyada birleştirin</p>
+    </div>
+    
+    <div class="container">
+        <h2>Talimatlar</h2>
+        <ol>
+            <li>Birleştirmek istediğiniz Excel dosyalarını seçin (.xlsx)</li>
+            <li>İşlemi başlatmak için "Excel Dosyalarını İşle" düğmesine tıklayın</li>
+            <li>İşlem tamamlandığında, birleştirilmiş Excel dosyasını indirin</li>
+        </ol>
+        
+        <div class="info-box">
+            <p>Bu uygulama şunları yapar:</p>
+            <ul>
+                <li>PÖ veya HCA sayfalarını okur</li>
+                <li>Belirli sütunlardaki verileri çıkarır (Apartman Adı, Daire No, Abone No, vb.)</li>
+                <li>Ada ismini dosya adından ayıklar</li>
+                <li>Tüm verileri tek bir Excel dosyasında birleştirir</li>
+            </ul>
+        </div>
+        
+        <div class="file-upload-container">
+            <div class="custom-file-upload">
+                <input type="file" id="excelFiles" class="file-input" accept=".xlsx" multiple />
+                <label for="excelFiles" class="file-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Excel Dosyaları Seçin</span>
+                </label>
+                <div id="file-name" class="file-name">Henüz dosya seçilmedi</div>
+            </div>
+            <button id="processBtn">Excel Dosyalarını İşle</button>
+        </div>
+        
+        <div id="status" class="status">Hazır</div>
+        
+        <div id="downloadContainer" class="download-container hidden">
+            <h3>İşlenmiş Dosya</h3>
+            <a id="downloadLink" href="#" class="download-button">Birleştirilmiş Excel Dosyasını İndir</a>
+        </div>
+        
+        <div id="log" class="log">
+            <p>İşlem kayıtları burada görünecek...</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('excelFiles').addEventListener('change', function(event) {
+            const fileNameElement = document.getElementById('file-name');
+            if (this.files.length > 0) {
+                if (this.files.length === 1) {
+                    fileNameElement.textContent = this.files[0].name;
+                } else {
+                    fileNameElement.textContent = `${this.files.length} dosya seçildi`;
+                }
+                fileNameElement.classList.add('has-files');
+            } else {
+                fileNameElement.textContent = 'Henüz dosya seçilmedi';
+                fileNameElement.classList.remove('has-files');
+            }
+        });
+    </script>
+    <script src="excel-processor.js"></script>
+</body>
+</html>
