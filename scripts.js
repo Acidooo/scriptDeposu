@@ -2,7 +2,7 @@
 const toolDescriptions = {
     "bifi_web": {
         title: "Bifi Tarih Filtreli",
-        description: "Tarih filtreleme için Bifi aracı"
+        description: "Bifi dosyaları için tarih filtreleme aracı"
     },
     "extract_zip_web": {
         title: "Çoklu ZIP Çıkartma",
