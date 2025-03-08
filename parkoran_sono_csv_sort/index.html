@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Sıralama Aracı</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Add JSZip library for handling multiple file downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>CSV Sıralama Aracı</h1>
+        <p>CSV dosyalarını Zip code sütununa göre sıralayın</p>
+    </div>
+    
+    <div class="container">
+        <h2>Talimatlar</h2>
+        <ol>
+            <li>Sıralamak istediğiniz CSV dosyalarını seçin (noktalı virgül ile ayrılmış, birden fazla seçilebilir)</li>
+            <li>İşlemi başlatmak için "CSV Dosyalarını İşle" düğmesine tıklayın</li>
+            <li>İşlem tamamlandığında, sıralanmış CSV dosyalarını indirmek için bağlantılara tıklayın</li>
+        </ol>
+        
+        <div class="info-box">
+            <p>Bu araç şunları yapar:</p>
+            <ul>
+                <li>Boş Zip code değerlerini siler</li>
+                <li>Zip code içindeki sayısal değerleri çıkarır</li>
+                <li>Value sütununu sayısal değerlere dönüştürür</li>
+                <li>Verilerinizi Zip code'a göre artan sırada sıralar</li>
+            </ul>
+        </div>
+        
+        <div class="file-upload">
+            <input type="file" id="csvFile" accept=".csv" multiple />
+            <button id="processBtn">CSV Dosyalarını İşle</button>
+        </div>
+        
+        <div id="status" class="status">Hazır</div>
+        
+        <div id="downloadContainer" class="download-container hidden">
+            <h3>İşlenmiş Dosyalar</h3>
+            <div class="download-all-container">
+                <button id="downloadAllBtn" class="download-all-button">Tüm Dosyaları İndir (ZIP)</button>
+                <button id="downloadCombinedBtn" class="download-combined-button">Tüm Dosyaları Tek CSV Olarak İndir</button>
+            </div>
+            <div id="downloadLinks"></div>
+        </div>
+        
+        <div id="log" class="log">
+            <p>İşlem kayıtları burada görünecek...</p>
+        </div>
+    </div>
+
+    <script src="csv-processor.js"></script>
+</body>
+</html>
