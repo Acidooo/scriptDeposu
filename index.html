@@ -59,15 +59,17 @@
 
     <script>
         const folders = ["bifi_web", "extract_zip_web"]; // Update this list with actual folder names
-
+        const desc=["Bifi Tarih Filtresi","ZIP Dosyası Çıkartma"];
         const list = document.getElementById("site-list");
+
         folders.forEach(folder => {
             const a = document.createElement("a");
             a.href = `./${folder}/`;
             a.className = "card";
-            a.textContent = folder;
+            a.textContent = desc[folders.indexOf(folder)];
             list.appendChild(a);
         });
+
     </script>
 
 </body>
