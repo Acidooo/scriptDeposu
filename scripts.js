@@ -43,28 +43,46 @@ function getRepoName() {
 // Function to automatically detect available directories
 async function detectDirectories() {
     try {
-        let directories = [];
+        // Always default to predefined list first
+        let directories = Object.keys(toolDescriptions);
         
         if (isGitHubPages()) {
-            // We're on GitHub Pages, use GitHub API to get directories
-            const username = window.location.hostname.split('.')[0];
-            const repoName = getRepoName();
-            
-            if (!repoName) {
-                throw new Error("Could not determine repository name");
+            try {
+                // We're on GitHub Pages, use Octokit for GitHub API
+                const username = window.location.hostname.split('.')[0];
+                const repoName = getRepoName();
+                
+                if (!repoName) {
+                    throw new Error("Could not determine repository name");
+                }
+                
+                // Using Octokit without authentication for public repositories
+                const octokit = new Octokit();
+                
+                const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+                    owner: username,
+                    repo: repoName,
+                    path: '',
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                
+                if (response.status === 200 && Array.isArray(response.data)) {
+                    // Filter for directories
+                    const apiDirectories = response.data
+                        .filter(item => item.type === 'dir')
+                        .map(item => item.name);
+                        
+                    if (apiDirectories.length > 0) {
+                        directories = apiDirectories;
+                        console.log("Successfully fetched directories via GitHub API:", directories);
+                    }
+                }
+            } catch (apiError) {
+                console.warn("GitHub API error:", apiError.message);
+                // Continue using the default directories list
             }
-            
-            const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/`;
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-            
-            // Filter for directories
-            directories = data
-                .filter(item => item.type === 'dir')
-                .map(item => item.name);
-        } else {
-            // Fallback to a predefined list for local development
-            directories = Object.keys(toolDescriptions);
         }
         
         return directories;
