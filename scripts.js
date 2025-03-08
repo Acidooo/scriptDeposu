@@ -25,73 +25,10 @@ const toolDescriptions = {
 const list = document.getElementById("site-list");
 const loader = document.getElementById("loader");
 
-// Function to detect if we're on GitHub Pages or local
-function isGitHubPages() {
-    return window.location.hostname.includes('github.io');
-}
-
-// Function to get the repository name from the URL
-function getRepoName() {
-    if (isGitHubPages()) {
-        // Extract repo name from github.io URL
-        const pathParts = window.location.pathname.split('/');
-        return pathParts[1]; // Usually the first path component is the repo name
-    }
-    return null;
-}
-
-// Function to automatically detect available directories using GitHub REST API
+// Simplified function to get tool directories - no API calls
 async function detectDirectories() {
-    try {
-        // Use predefined list as fallback
-        let directories = Object.keys(toolDescriptions);
-        
-        if (isGitHubPages()) {
-            try {
-                // Extract username and repository name from the URL
-                const username = window.location.hostname.split('.')[0];
-                const repoName = getRepoName();
-                
-                if (!repoName) {
-                    throw new Error("Could not determine repository name");
-                }
-                
-                // Using GitHub REST API directly (no authentication needed for public repos)
-                const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/`;
-                console.log(`Fetching directories from: ${apiUrl}`);
-                
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`GitHub API returned ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                // Filter for directories only
-                const apiDirectories = data
-                    .filter(item => item.type === 'dir')
-                    .map(item => item.name);
-                    
-                if (apiDirectories.length > 0) {
-                    directories = apiDirectories;
-                    console.log("Successfully detected directories:", directories);
-                }
-            } catch (apiError) {
-                console.warn("GitHub API error:", apiError.message);
-                // Continue using the default directories list
-            }
-        }
-        
-        return directories;
-    } catch (error) {
-        console.error("Error detecting directories:", error);
-        return Object.keys(toolDescriptions); // Fallback to predefined list
-    }
+    // Simply return the predefined list of tools
+    return Object.keys(toolDescriptions);
 }
 
 // Function to create a card for each directory
