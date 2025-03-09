@@ -9,7 +9,7 @@ const toolDescriptions = {
         description: "ZIP dosyalarını çıkartma aracı"
     },
     "parkoran_sono_csv_sort": {
-        title: "SONO WORKSPACE CSV Sıralama",
+        title: "Sono Workspace CSV Sıralama",
         description: "CSV dosyalarını düzenleme ve sıralama aracı"
     },
     "okuma_web": {
@@ -17,8 +17,8 @@ const toolDescriptions = {
         description: "Okuma raporlarını tek dosyada birleştirir"
     },
     "whiteoutSurvival": {
-        title: "WhiteOut Survival Kod",
-        description: "WhiteOut Survival hediye kodları için araç"
+        title: "WOS",
+        description: "WOS"
     }
 };
 
