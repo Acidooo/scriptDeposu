@@ -222,20 +222,44 @@ document.addEventListener('DOMContentLoaded', function() {
         return zipFiles;
     }
 
+    // Function to recursively find all XLSX files in the directory
+    async function findAllXlsxFiles(directoryHandle, path = '') {
+        const xlsxFiles = [];
+        
+        for await (const entry of directoryHandle.values()) {
+            const entryPath = path ? `${path}/${entry.name}` : entry.name;
+            
+            if (entry.kind === 'directory') {
+                const subDirXlsx = await findAllXlsxFiles(entry, entryPath);
+                xlsxFiles.push(...subDirXlsx);
+            } else if (entry.name.toLowerCase().endsWith('.xlsx')) {
+                xlsxFiles.push({
+                    handle: entry,
+                    path: entryPath
+                });
+            }
+        }
+        
+        return xlsxFiles;
+    }
+
     // Determine the appropriate folder for a file based on its name
     function determineTargetFolder(filename) {
         const lowerCaseFilename = filename.toLowerCase();
         
-        // Check each category keyword
-        for (const [keyword, folder] of Object.entries(categoryMapping)) {
-            if (lowerCaseFilename.includes(keyword.toLowerCase())) {
-                return folder;
-            }
+        // Check keywords in priority order (longer/more specific keywords first)
+        // bifi_reading must be checked before bifi
+        if (lowerCaseFilename.includes("bifi_reading")) {
+            return "Bifi_Reading";
         }
-        
-        // Special case for "Bifi" to avoid matching with "Bifi_Reading"
-        if (lowerCaseFilename.includes("bifi") && !lowerCaseFilename.includes("bifi_reading")) {
+        if (lowerCaseFilename.includes("bifi")) {
             return "Bifi";
+        }
+        if (lowerCaseFilename.includes("montaj raporu")) {
+            return "Montaj Raporu";
+        }
+        if (lowerCaseFilename.includes("okuma raporu")) {
+            return "Okuma Raporu";
         }
         
         // If no category matches, return null for the root destination folder
@@ -315,6 +339,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Move a single XLSX file to the appropriate category
+    async function moveXlsxFile(xlsxFileEntry) {
+        try {
+            const file = await xlsxFileEntry.handle.getFile();
+            const content = await file.arrayBuffer();
+            const actualFilename = xlsxFileEntry.handle.name;
+            
+            // Determine target folder based on filename
+            const targetCategory = determineTargetFolder(actualFilename);
+            
+            // Start with destination directory or category subfolder
+            let currentDirHandle = destDirectoryHandle;
+            
+            // If a category is matched, use that folder as base
+            if (targetCategory) {
+                currentDirHandle = await destDirectoryHandle.getDirectoryHandle(targetCategory, { create: true });
+            }
+            
+            // Write file directly to category folder (no source directory structure)
+            const fileHandle = await currentDirHandle.getFileHandle(actualFilename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(content);
+            await writable.close();
+            
+            return true;
+        } catch (error) {
+            logMessage(`'${xlsxFileEntry.path}' XLSX dosyası taşınırken hata: ${error.message}`);
+            return false;
+        }
+    }
+
     // Main function to extract all ZIP files
     async function extractAllZipFiles() {
         try {
@@ -363,9 +418,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
+            // Now process XLSX files
+            logMessage("XLSX dosyaları işleniyor...");
+            const xlsxFiles = await findAllXlsxFiles(sourceDirectoryHandle);
+            
+            if (xlsxFiles.length > 0) {
+                logMessage(`${xlsxFiles.length} adet XLSX dosyası bulundu. Taşıma işlemi başlıyor...`);
+                
+                for (const xlsxFile of xlsxFiles) {
+                    logMessage(`Taşınıyor: ${xlsxFile.path}`);
+                    
+                    const success = await moveXlsxFile(xlsxFile);
+                    
+                    if (success) {
+                        logMessage(`"${xlsxFile.path}" hedef klasöre taşındı`);
+                    }
+                }
+            } else {
+                logMessage("Kaynak klasörde XLSX dosyası bulunamadı.");
+            }
+            
             logMessage("=====================================================================", true);
             logMessage("Çıkarma işlemi tamamlandı!");
             logMessage(`Tüm ZIP dosyaları hedef klasöre çıkarıldı ve kategorilere ayrıldı`);
+            logMessage(`XLSX dosyaları da kategorilere göre yerleştirildi`);
             logMessage("=====================================================================", true);
             statusDisplay.textContent = "Tamamlandı!";
             

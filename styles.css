@@ -100,3 +100,171 @@ h1 {
 .card:hover .tool-description {
     bottom: 0;
 }
+
+/* Search and filter components */
+.tools-controls {
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.search-container {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto 15px;
+    width: 100%;
+}
+
+.search-container input {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 1px solid #444;
+    border-radius: 25px;
+    background-color: #333;
+    color: #e0e0e0;
+    font-size: 16px;
+}
+
+.search-container input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #777;
+}
+
+.categories {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 auto;
+    max-width: 600px;
+}
+
+.category-btn {
+    padding: 8px 15px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 20px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-btn:hover {
+    background-color: #444;
+    color: #fff;
+}
+
+.category-btn.active {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+/* Theme toggle */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 25px;
+    background-color: #444;
+    border-radius: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+}
+
+.theme-toggle::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle.light-mode::after {
+    transform: translateX(25px);
+}
+
+.theme-toggle .icon {
+    position: absolute;
+    font-size: 14px;
+}
+
+.theme-toggle .sun-icon {
+    right: 7px;
+    color: #f1c40f;
+}
+
+.theme-toggle .moon-icon {
+    left: 7px;
+    color: #f1c40f;
+}
+
+/* Footer styles */
+.footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #444;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+}
+
+.footer a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* Light theme */
+body.light-mode {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+body.light-mode .card {
+    background-color: #fff;
+    color: #333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .card:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+body.light-mode h1 {
+    color: #333;
+}
+
+body.light-mode .description {
+    color: #555;
+}
+
+body.light-mode .search-container input {
+    background-color: #fff;
+    border-color: #ddd;
+    color: #333;
+}
+
+body.light-mode .category-btn {
+    background-color: #eee;
+    border-color: #ddd;
+    color: #555;
+}

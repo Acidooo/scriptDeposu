@@ -7,12 +7,37 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body>
+    <div class="theme-toggle" id="themeToggle">
+        <span class="icon moon-icon"><i class="bi bi-moon-stars"></i></span>
+        <span class="icon sun-icon"><i class="bi bi-sun"></i></span>
+    </div>
+    
     <h1>Script Listesi</h1>
     <p class="description">Bu sayfa mevcut araçları listeler.</p>
+    
+    <div class="tools-controls">
+        <div class="search-container">
+            <input type="text" id="toolSearch" placeholder="Araç ara...">
+            <span class="search-icon"><i class="bi bi-search"></i></span>
+        </div>
+        
+        <div class="categories" id="categories">
+            <button class="category-btn active" data-category="all">Tümü</button>
+            <button class="category-btn" data-category="file">Dosya İşleme</button>
+            <button class="category-btn" data-category="data">Veri İşleme</button>
+            <button class="category-btn" data-category="utility">Diğer</button>
+        </div>
+    </div>
+    
     <div class="loader" id="loader"></div>
     <div class="container" id="site-list"></div>
+    
+    <footer class="footer">
+        <p>© 2025 Script Deposu | <a href="https://github.com/acidooo" target="_blank">GitHub</a></p>
+    </footer>
 
     <script src="scripts.js"></script>
 </body>
