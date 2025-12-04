@@ -12,6 +12,21 @@ body {
     padding: 20px;
 }
 
+.back-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #333;
+    color: #e8e8e8;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+    background-color: #555;
+}
+
 .container {
     max-width: 1000px;
     margin: 0 auto;

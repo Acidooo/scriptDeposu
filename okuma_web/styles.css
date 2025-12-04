@@ -7,6 +7,22 @@ body {
     background-color: #1a1a1a;
     color: #e0e0e0;
 }
+
+.back-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #333;
+    color: #e0e0e0;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+    background-color: #444;
+}
+
 .header {
     text-align: center;
     border-bottom: 2px solid #444;
