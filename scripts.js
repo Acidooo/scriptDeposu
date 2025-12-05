@@ -26,6 +26,11 @@ const toolDescriptions = {
         title: "WOS",
         description: "WOS",
         category: "utility"
+    },
+    "image_text_extractor": {
+        title: "Resimden Metin (Word/Excel)",
+        description: "Görsellerden metin çıkarıp Word/Excel'e aktar",
+        category: "data"
     }
 };
 

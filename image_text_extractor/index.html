@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Word/Excel | Script Deposu</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">Image → Text Extractor</div>
+        <div class="meta">Görsellerden metni çıkar, Word ve Excel'e aktar</div>
+    </header>
+
+    <main class="page">
+        <section class="panel">
+            <div class="controls">
+                <label class="btn primary" for="imageInput">Resim Seç</label>
+                <input id="imageInput" type="file" accept="image/*" multiple hidden>
+                <button id="processBtn" class="btn" type="button">Hepsini İşle</button>
+                <button id="wordBtn" class="btn" type="button">Word indir</button>
+                <button id="excelBtn" class="btn" type="button">Excel indir</button>
+                <button id="clearBtn" class="btn ghost" type="button">Temizle</button>
+            </div>
+
+            <div class="dropzone" id="dropzone">
+                <div class="drop-hint">Sürükleyip bırak veya dosya seç</div>
+                <div class="drop-sub">Desteklenen türler: JPG, PNG, WEBP, TIFF, BMP</div>
+            </div>
+
+            <div class="options">
+                <label class="option">
+                    <span>Dil (Tesseract)</span>
+                    <select id="langSelect">
+                        <option value="eng" selected>İngilizce (eng)</option>
+                        <option value="tur">Türkçe (tur)</option>
+                        <option value="eng+tur">İngilizce + Türkçe</option>
+                    </select>
+                </label>
+                <label class="option">
+                    <span>Ön İzleme</span>
+                    <input id="previewToggle" type="checkbox" checked>
+                </label>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>Görevler</div>
+                <div id="status" class="status">Hazır</div>
+            </div>
+            <div id="fileList" class="file-list"></div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>Çıkarılan Metin</div>
+                <button id="copyAll" class="btn ghost" type="button">Hepsini Kopyala</button>
+            </div>
+            <textarea id="output" class="output" rows="10" placeholder="İşlem sonrası metin burada görünecek..." readonly></textarea>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
