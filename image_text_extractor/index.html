@@ -3,70 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to Word/Excel | Script Deposu</title>
+    <title>Görselden Metne Dönüştürücü (OCR)</title>
+    <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Tesseract.js for OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <!-- docx for Word Export -->
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    <!-- FileSaver for saving files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
-    <header class="topbar">
-        <div class="brand">Image → Text Extractor</div>
-        <div class="meta">Görsellerden metni çıkar, Word ve Excel'e aktar</div>
-    </header>
+    <div class="container">
+        <header>
+            <a href="../index.html" class="back-button">← Ana Menü</a>
+            <h1>Görselden Metne Dönüştürücü (OCR)</h1>
+            <p>Görsellerdeki metinleri tarayın ve Excel veya Word formatında indirin.</p>
+        </header>
 
-    <main class="page">
-        <section class="panel">
-            <div class="controls">
-                <label class="btn primary" for="imageInput">Resim Seç</label>
-                <input id="imageInput" type="file" accept="image/*" multiple hidden>
-                <button id="processBtn" class="btn" type="button">Hepsini İşle</button>
-                <button id="wordBtn" class="btn" type="button">Word indir</button>
-                <button id="excelBtn" class="btn" type="button">Excel indir</button>
-                <button id="clearBtn" class="btn ghost" type="button">Temizle</button>
-            </div>
+        <main>
+            <div class="control-panel">
+                <div class="file-upload-section">
+                    <label for="imageInput" class="file-label">
+                        <span>📁 Görsel Seç (PNG, JPG, JPEG)</span>
+                        <input type="file" id="imageInput" accept="image/*" multiple>
+                    </label>
+                </div>
 
-            <div class="dropzone" id="dropzone">
-                <div class="drop-hint">Sürükleyip bırak veya dosya seç</div>
-                <div class="drop-sub">Desteklenen türler: JPG, PNG, WEBP, TIFF, BMP</div>
-            </div>
-
-            <div class="options">
-                <label class="option">
-                    <span>Dil (Tesseract)</span>
-                    <select id="langSelect">
-                        <option value="eng" selected>İngilizce (eng)</option>
-                        <option value="tur">Türkçe (tur)</option>
-                        <option value="eng+tur">İngilizce + Türkçe</option>
+                <div class="settings-section">
+                    <label for="languageSelect">Dil:</label>
+                    <select id="languageSelect">
+                        <option value="tur">Türkçe</option>
+                        <option value="eng">İngilizce</option>
+                        <option value="tur+eng">Türkçe + İngilizce</option>
                     </select>
-                </label>
-                <label class="option">
-                    <span>Ön İzleme</span>
-                    <input id="previewToggle" type="checkbox" checked>
-                </label>
-            </div>
-        </section>
+                </div>
 
-        <section class="panel">
-            <div class="panel-head">
-                <div>Görevler</div>
-                <div id="status" class="status">Hazır</div>
+                <button id="processBtn" class="primary-button" disabled>Metni Çıkar</button>
             </div>
-            <div id="fileList" class="file-list"></div>
-        </section>
 
-        <section class="panel">
-            <div class="panel-head">
-                <div>Çıkarılan Metin</div>
-                <button id="copyAll" class="btn ghost" type="button">Hepsini Kopyala</button>
+            <div id="progressContainer" class="hidden">
+                <div class="progress-bar">
+                    <div id="progressBarFill" class="progress-fill"></div>
+                </div>
+                <p id="statusText">Hazır</p>
             </div>
-            <textarea id="output" class="output" rows="10" placeholder="İşlem sonrası metin burada görünecek..." readonly></textarea>
-        </section>
-    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+            <div id="resultsSection" class="hidden">
+                <div class="export-buttons">
+                    <button id="exportExcelBtn" class="secondary-button">Excel'e Aktar (.xlsx)</button>
+                    <button id="exportWordBtn" class="secondary-button">Word'e Aktar (.docx)</button>
+                </div>
+                
+                <div id="previewContainer">
+                    <!-- Results will be added here dynamically -->
+                </div>
+            </div>
+        </main>
+    </div>
     <script src="app.js"></script>
 </body>
 </html>

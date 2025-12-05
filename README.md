@@ -42,12 +42,13 @@ WhiteOut Survival oyunu için birden fazla hesapta hediye kodlarını (gift code
   - Oyun API'si ile oyuncu bilgilerini doğrulama
   - Toplu hediye kodu aktivasyonu
 
-### 6. Görselden Metin Alma ve Aktarma (`image_text_extractor`)
-Görsellerden metni OCR ile çıkarır, ardından Word veya Excel olarak indirebilirsiniz.
+### 6. Görselden Metne Dönüştürücü (`image_text_extractor`)
+Görsellerden (PNG, JPG) metin çıkaran ve sonuçları Excel veya Word formatında dışa aktaran bir araçtır.
 - **Özellikler:**
-  - Çoklu görsel yükleme, sürükle-bırak ve panodan yapıştırma
-  - Tesseract.js ile Türkçe/İngilizce metin çıkarma
-  - Çıkarılan metni tek seferde Word veya Excel dosyası olarak indirme
+  - Tesseract.js ile tarayıcı tabanlı OCR
+  - Türkçe ve İngilizce dil desteği
+  - Toplu işlem yapabilme
+  - Excel (.xlsx) ve Word (.docx) olarak indirme
 
 ## Kurulum ve Kullanım
 

@@ -28,9 +28,9 @@ const toolDescriptions = {
         category: "utility"
     },
     "image_text_extractor": {
-        title: "Resimden Metin (Word/Excel)",
-        description: "Görsellerden metin çıkarıp Word/Excel'e aktar",
-        category: "data"
+        title: "Görselden Metne (OCR)",
+        description: "Görsellerden metin çıkarın ve Excel/Word formatına dönüştürün.",
+        category: "utility"
     }
 };
 

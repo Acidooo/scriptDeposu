@@ -1,268 +1,201 @@
-const fileInput = document.getElementById('imageInput');
-const dropzone = document.getElementById('dropzone');
-const fileList = document.getElementById('fileList');
-const output = document.getElementById('output');
-const statusEl = document.getElementById('status');
-const langSelect = document.getElementById('langSelect');
-const previewToggle = document.getElementById('previewToggle');
-const processBtn = document.getElementById('processBtn');
-const wordBtn = document.getElementById('wordBtn');
-const excelBtn = document.getElementById('excelBtn');
-const clearBtn = document.getElementById('clearBtn');
-const copyAllBtn = document.getElementById('copyAll');
+document.addEventListener('DOMContentLoaded', () => {
+    const imageInput = document.getElementById('imageInput');
+    const processBtn = document.getElementById('processBtn');
+    const languageSelect = document.getElementById('languageSelect');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const statusText = document.getElementById('statusText');
+    const resultsSection = document.getElementById('resultsSection');
+    const previewContainer = document.getElementById('previewContainer');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const exportWordBtn = document.getElementById('exportWordBtn');
 
-let queue = [];
-let idCounter = 0;
+    let selectedFiles = [];
+    let extractedData = []; // Stores objects { filename, text, imageSrc }
 
-const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/bmp', 'image/tiff'];
-
-function formatBytes(bytes = 0) {
-    if (!bytes) return '0 B';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
-}
-
-function updateStatus(text) {
-    statusEl.textContent = text;
-}
-
-function addFiles(fileListLike) {
-    const files = Array.from(fileListLike || []);
-    const validFiles = files.filter(file => allowedTypes.includes(file.type));
-
-    const newItems = validFiles.map(file => ({
-        id: `f-${Date.now()}-${idCounter++}`,
-        file,
-        name: file.name,
-        size: file.size,
-        status: 'pending',
-        progress: 0,
-        text: '',
-        error: ''
-    }));
-
-    if (newItems.length === 0) {
-        updateStatus('Desteklenen bir görsel seçin.');
-        return;
-    }
-
-    queue = queue.concat(newItems);
-    renderQueue();
-    updateStatus(`${queue.length} dosya listede.`);
-}
-
-function renderQueue() {
-    fileList.innerHTML = '';
-    queue.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'file-card';
-        card.dataset.id = item.id;
-
-        if (previewToggle.checked) {
-            const img = document.createElement('img');
-            img.className = 'preview';
-            img.src = URL.createObjectURL(item.file);
-            img.alt = item.name;
-            card.appendChild(img);
+    // Handle File Selection
+    imageInput.addEventListener('change', (e) => {
+        selectedFiles = Array.from(e.target.files);
+        if (selectedFiles.length > 0) {
+            processBtn.disabled = false;
+            statusText.textContent = `${selectedFiles.length} dosya seçildi.`;
+            progressContainer.classList.remove('hidden');
+            progressBarFill.style.width = '0%';
+        } else {
+            processBtn.disabled = true;
+            progressContainer.classList.add('hidden');
         }
-
-        const meta = document.createElement('div');
-        meta.className = 'file-meta';
-        const name = document.createElement('div');
-        name.className = 'file-name';
-        name.textContent = item.name;
-        const size = document.createElement('div');
-        size.className = 'file-size';
-        size.textContent = formatBytes(item.size);
-        meta.appendChild(name);
-        meta.appendChild(size);
-        card.appendChild(meta);
-
-        const badge = document.createElement('div');
-        badge.className = `badge ${item.status}`;
-        badge.textContent = item.status === 'pending' ? 'Beklemede' : item.status === 'working' ? 'İşleniyor' : item.status === 'done' ? 'Hazır' : 'Hata';
-        card.appendChild(badge);
-
-        const progress = document.createElement('div');
-        progress.className = 'progress';
-        const bar = document.createElement('span');
-        bar.style.width = `${item.progress || 0}%`;
-        progress.appendChild(bar);
-        card.appendChild(progress);
-
-        if (item.error) {
-            const err = document.createElement('div');
-            err.style.color = '#ef858f';
-            err.style.fontSize = '12px';
-            err.textContent = item.error;
-            card.appendChild(err);
-        }
-
-        fileList.appendChild(card);
     });
-}
 
-function mergeOutput() {
-    const ready = queue.filter(q => q.text);
-    if (!ready.length) {
-        output.value = '';
-        return;
-    }
-    const blocks = ready.map(item => `# ${item.name}\n${item.text.trim()}`);
-    output.value = blocks.join('\n\n---\n\n');
-}
+    // Process Images
+    processBtn.addEventListener('click', async () => {
+        if (selectedFiles.length === 0) return;
 
-async function processItem(item, lang) {
-    item.status = 'working';
-    item.progress = 5;
-    renderQueue();
+        // Reset UI
+        processBtn.disabled = true;
+        extractedData = [];
+        previewContainer.innerHTML = '';
+        resultsSection.classList.add('hidden');
+        progressContainer.classList.remove('hidden');
+        
+        const lang = languageSelect.value;
 
-    try {
-        const result = await Tesseract.recognize(item.file, lang, {
-            logger: message => {
-                if (message.status === 'recognizing text' && typeof message.progress === 'number') {
-                    item.progress = Math.round(message.progress * 100);
-                    updateProgressBar(item.id, item.progress);
-                }
+        try {
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const progress = ((i) / selectedFiles.length) * 100;
+                updateProgress(progress, `İşleniyor: ${file.name} (${i + 1}/${selectedFiles.length})`);
+
+                const text = await performOCR(file, lang);
+                const imageSrc = await readFileAsDataURL(file);
+
+                const resultItem = {
+                    filename: file.name,
+                    text: text,
+                    imageSrc: imageSrc
+                };
+                extractedData.push(resultItem);
+                
+                // Add to preview immediately
+                addResultToPreview(resultItem, i);
             }
+
+            updateProgress(100, 'İşlem Tamamlandı!');
+            resultsSection.classList.remove('hidden');
+        } catch (error) {
+            console.error(error);
+            statusText.textContent = 'Hata oluştu: ' + error.message;
+        } finally {
+            processBtn.disabled = false;
+        }
+    });
+
+    // OCR Function using Tesseract.js
+    async function performOCR(file, lang) {
+        const worker = await Tesseract.createWorker(lang);
+        const ret = await worker.recognize(file);
+        await worker.terminate();
+        return ret.data.text;
+    }
+
+    // Helper to read file for preview
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function updateProgress(percent, text) {
+        progressBarFill.style.width = `${percent}%`;
+        statusText.textContent = text;
+    }
+
+    function addResultToPreview(data, index) {
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.innerHTML = `
+            <div class="image-preview">
+                <img src="${data.imageSrc}" alt="${data.filename}">
+                <p><small>${data.filename}</small></p>
+            </div>
+            <div class="text-content">
+                <textarea id="text-${index}">${data.text}</textarea>
+            </div>
+        `;
+        previewContainer.appendChild(div);
+        
+        // Update data when textarea changes
+        const textarea = div.querySelector(`#text-${index}`);
+        textarea.addEventListener('input', (e) => {
+            extractedData[index].text = e.target.value;
+        });
+    }
+
+    // Export to Excel
+    exportExcelBtn.addEventListener('click', () => {
+        if (extractedData.length === 0) return;
+
+        const wb = XLSX.utils.book_new();
+        
+        // Prepare data for Excel
+        const wsData = [
+            ['Dosya Adı', 'Çıkarılan Metin'] // Header
+        ];
+
+        extractedData.forEach(item => {
+            wsData.push([item.filename, item.text]);
         });
 
-        item.text = (result.data.text || '').trim();
-        item.status = 'done';
-        item.progress = 100;
-        updateProgressBar(item.id, 100);
-    } catch (error) {
-        console.error(error);
-        item.status = 'error';
-        item.error = 'OCR başarısız: ' + (error.message || error);
-    }
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        
+        // Set column widths
+        ws['!cols'] = [{ wch: 30 }, { wch: 100 }];
 
-    renderQueue();
-    mergeOutput();
-}
-
-function updateProgressBar(id, value) {
-    const card = fileList.querySelector(`[data-id="${id}"]`);
-    if (!card) return;
-    const bar = card.querySelector('.progress span');
-    if (bar) {
-        bar.style.width = `${value}%`;
-    }
-}
-
-async function processAll() {
-    if (queue.length === 0) {
-        updateStatus('Önce görsel ekleyin.');
-        return;
-    }
-
-    const lang = langSelect.value || 'eng';
-    updateStatus('OCR başlatıldı...');
-
-    let done = 0;
-    for (const item of queue) {
-        if (item.status === 'done') {
-            done++;
-            continue;
-        }
-        await processItem(item, lang);
-        done++;
-        updateStatus(`${done}/${queue.length} tamamlandı`);
-    }
-
-    updateStatus('Tüm işlemler bitti.');
-}
-
-function downloadBlob(filename, blob) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-function exportWord() {
-    const items = queue.filter(q => q.text);
-    if (items.length === 0) {
-        updateStatus('Word için çıkarılmış metin yok.');
-        return;
-    }
-
-    const doc = new docx.Document({
-        sections: [
-            {
-                children: items.flatMap(item => [
-                    new docx.Paragraph({ text: item.name, heading: docx.HeadingLevel.HEADING_2 }),
-                    new docx.Paragraph({ text: item.text || '' }),
-                    new docx.Paragraph({ text: '' })
-                ])
-            }
-        ]
+        XLSX.utils.book_append_sheet(wb, ws, "OCR Sonuçları");
+        XLSX.writeFile(wb, "OCR_Sonuclari.xlsx");
     });
 
-    docx.Packer.toBlob(doc).then(blob => downloadBlob('image-text-output.docx', blob));
-}
+    // Export to Word
+    exportWordBtn.addEventListener('click', () => {
+        if (extractedData.length === 0) return;
 
-function exportExcel() {
-    const items = queue.filter(q => q.text);
-    if (items.length === 0) {
-        updateStatus('Excel için çıkarılmış metin yok.');
-        return;
-    }
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
 
-    const data = [['Dosya Adı', 'Metin']];
-    items.forEach(item => data.push([item.name, item.text]));
+        const children = [];
 
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Extracted');
-    XLSX.writeFile(wb, 'image-text-output.xlsx');
-}
+        // Title
+        children.push(
+            new Paragraph({
+                text: "OCR Çıktısı",
+                heading: HeadingLevel.TITLE,
+                spacing: { after: 200 }
+            })
+        );
 
-function clearAll() {
-    queue = [];
-    fileList.innerHTML = '';
-    output.value = '';
-    updateStatus('Temizlendi.');
-}
+        extractedData.forEach(item => {
+            // File Name Header
+            children.push(
+                new Paragraph({
+                    text: `Dosya: ${item.filename}`,
+                    heading: HeadingLevel.HEADING_2,
+                    spacing: { before: 200, after: 100 }
+                })
+            );
 
-function copyAll() {
-    if (!output.value.trim()) {
-        updateStatus('Kopyalanacak metin yok.');
-        return;
-    }
-    navigator.clipboard.writeText(output.value)
-        .then(() => updateStatus('Metin panoya kopyalandı.'))
-        .catch(() => updateStatus('Kopyalama başarısız.'));
-}
+            // Extracted Text (split by newlines to preserve paragraphs)
+            const lines = item.text.split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    children.push(
+                        new Paragraph({
+                            text: line.trim(),
+                            spacing: { after: 100 }
+                        })
+                    );
+                }
+            });
+            
+            // Separator
+            children.push(
+                new Paragraph({
+                    text: "----------------------------------------",
+                    spacing: { before: 200, after: 200 }
+                })
+            );
+        });
 
-// Event wiring
-fileInput.addEventListener('change', e => addFiles(e.target.files));
-processBtn.addEventListener('click', processAll);
-wordBtn.addEventListener('click', exportWord);
-excelBtn.addEventListener('click', exportExcel);
-clearBtn.addEventListener('click', clearAll);
-copyAllBtn.addEventListener('click', copyAll);
-previewToggle.addEventListener('change', renderQueue);
+        const doc = new Document({
+            sections: [{
+                properties: {},
+                children: children,
+            }],
+        });
 
-dropzone.addEventListener('dragover', e => {
-    e.preventDefault();
-    dropzone.classList.add('dragover');
+        Packer.toBlob(doc).then(blob => {
+            saveAs(blob, "OCR_Sonuclari.docx");
+        });
+    });
 });
-
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropzone.classList.remove('dragover');
-    addFiles(e.dataTransfer.files);
-});
-
-window.addEventListener('paste', e => {
-    if (e.clipboardData && e.clipboardData.files.length) {
-        addFiles(e.clipboardData.files);
-    }
-});
-
-updateStatus('Hazır. Görsel ekleyin.');
